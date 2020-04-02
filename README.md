@@ -2,6 +2,8 @@
 
 感受Python之美 | 一、Python基础 |二、Python字符串和正则|三、Python文件和日期|四、Python三大利器|五、Python绘图|六、Python之坑|七、Python第三方包|八、机器学习和深度学必知算法|九、Python实战|十、Pandas数据分析案例实战
 
+
+
 > 目前，正在编写第十一章：一步一步掌握Flask web 开发
 
 
@@ -301,7 +303,7 @@ In [1]: ord('A')
 Out[1]: 65
 ```
 
-#### 14 静态方法　
+#### 14 类方法　
 
 `classmethod` 装饰器对应的函数不需要实例化，不需要 `self `参数，但第一个参数需要是表示自身类的 cls 参数，可以来调用类的属性，类的方法，实例化对象等。
 
@@ -1618,6 +1620,178 @@ Out[15]: [0, 9, 7, 5]
 频繁使用同一切片的操作可使用slice对象抽出来，复用的同时还能提高代码可读性。
 
 
+
+#### 87 lambda 函数的动画演示
+
+有些读者反映，`lambda`函数不太会用，问我能不能解释一下。
+
+比如，下面求这个 `lambda`函数：
+
+```python
+def max_len(*lists):
+    return max(*lists, key=lambda v: len(v))
+```
+
+有两点疑惑：
+
+- 参数`v`的取值？ 
+- `lambda`函数有返回值吗？如果有，返回值是多少？
+
+调用上面函数，求出以下三个最长的列表：
+
+```python
+r = max_len([1, 2, 3], [4, 5, 6, 7], [8])
+print(f'更长的列表是{r}')
+```
+
+程序完整运行过程，动画演示如下：
+
+![](./img/lambda_show.gif)
+
+
+
+
+结论：
+- 参数v的可能取值为`*lists`，也就是 `tuple` 的一个元素。
+
+- `lambda`函数返回值，等于`lambda v`冒号后表达式的返回值。
+
+#### 88 粘性之禅
+
+7 行代码够烧脑，不信试试~~
+
+```python
+def product(*args, repeat=1):
+    pools = [tuple(pool) for pool in args] * repeat
+    result = [[]]
+    for pool in pools:
+        result = [x+[y] for x in result for y in pool]
+    for prod in result:
+        yield tuple(prod)
+```
+
+
+调用函数：
+```python
+rtn = product('xyz', '12', repeat=3)
+print(list(rtn))
+```
+
+快去手动敲敲，看看输出啥吧~~
+
+#### 89 元类
+
+`xiaoming`, `xiaohong`, `xiaozhang` 都是学生，这类群体叫做 `Student`. 
+
+Python 定义类的常见方法，使用关键字 `class`
+
+```python
+In [36]: class Student(object):
+    ...:     pass
+```
+`xiaoming`, `xiaohong`, `xiaozhang` 是类的实例，则：
+
+```python
+xiaoming = Student()
+xiaohong = Student()
+xiaozhang = Student()
+```
+
+创建后，xiaoming 的 `__class__` 属性，返回的便是 `Student`类
+
+```python
+In [38]: xiaoming.__class__
+Out[38]: __main__.Student
+```
+
+问题在于，`Student` 类有 `__class__`属性，如果有，返回的又是什么？
+```python
+In [39]: xiaoming.__class__.__class__
+Out[39]: type
+```
+哇，程序没报错，返回 `type`
+
+那么，我们不妨猜测：`Student` 类，类型就是 `type`
+
+换句话说，`Student`类就是一个**对象**，它的类型就是 `type`
+
+所以，Python 中一切皆对象，**类也是对象**
+
+Python 中，将描述 `Student` 类的类被称为：元类。
+
+按照此逻辑延伸，描述元类的类被称为：*元元类*，开玩笑了~ 描述元类的类也被称为元类。
+
+聪明的朋友会问了，既然 `Student` 类可创建实例，那么 `type` 类可创建实例吗？ 如果能，它创建的实例就叫：类 了。 你们真聪明！
+
+说对了，`type` 类一定能创建实例，比如 `Student` 类了。
+
+```python
+In [40]: Student = type('Student',(),{})
+
+In [41]: Student
+Out[41]: __main__.Student
+```
+它与使用 `class` 关键字创建的 `Student` 类一模一样。
+
+Python 的类，因为又是对象，所以和 `xiaoming`，`xiaohong` 对象操作相似。支持：
+- 赋值
+- 拷贝
+- 添加属性
+- 作为函数参数
+
+```python
+In [43]: StudentMirror = Student # 类直接赋值 # 类直接赋值
+In [44]: Student.class_property = 'class_property' # 添加类属性
+In [46]: hasattr(Student, 'class_property')
+Out[46]: True
+```
+
+元类，确实使用不是那么多，也许先了解这些，就能应付一些场合。就连 Python 界的领袖 `Tim Peters` 都说：
+
+“元类就是深度的魔法，99%的用户应该根本不必为此操心。”
+
+#### 90 对象序列化
+
+对象序列化，是指将内存中的对象转化为可存储或传输的过程。很多场景，直接一个类对象，传输不方便。
+
+但是，当对象序列化后，就会更加方便，因为约定俗成的，接口间的调用或者发起的 web 请求，一般使用 json 串传输。
+
+实际使用中，一般对类对象序列化。先创建一个 Student 类型，并创建两个实例。
+
+```python
+    class Student():
+        def __init__(self,**args):
+            self.ids = args['ids']
+            self.name = args['name']
+            self.address = args['address']
+    xiaoming = Student(ids = 1,name = 'xiaoming',address = '北京')
+    xiaohong = Student(ids = 2,name = 'xiaohong',address = '南京')
+```
+
+导入 json 模块，调用 dump 方法，就会将列表对象 [xiaoming,xiaohong]，序列化到文件 json.txt 中。
+```python
+    import json
+    
+    with open('json.txt', 'w') as f:
+        json.dump([xiaoming,xiaohong], f, default=lambda obj: obj.__dict__, ensure_ascii=False, indent=2, sort_keys=True)
+```
+
+生成的文件内容，如下：
+```json
+    [
+      {
+        "address": "北京",
+        "ids": 1,
+        "name": "xiaoming"
+      },
+      {
+        "address": "南京",
+        "ids": 2,
+        "name": "xiaohong"
+      }
+    ]
+```
+
 ### 二、Python字符串和正则
 
 字符串无所不在，字符串的处理也是最常见的操作。本章节将总结和字符串处理相关的一切操作。主要包括基本的字符串操作；高级字符串操作之正则。目前共有`20`个小例子
@@ -2059,7 +2233,72 @@ r = is_rotation('greatman', 'maneatgr')
 print(r)  # False
 ```
 
-### 
+#### 25 正浮点数
+
+从一系列字符串中，挑选出所有正浮点数。
+
+该怎么办？
+
+玩玩正则表达式，用正则搞它！
+
+关键是，正则表达式该怎么写呢？
+
+有了！
+
+`^[1-9]\d*\.\d*$`
+
+`^` 表示字符串开始
+
+`[1-9]` 表示数字1,2,3,4,5,6,7,8,9
+
+`^[1-9]` 连起来表示以数字 `1-9` 作为开头
+
+`\d` 表示一位 `0-9` 的数字
+
+`*` 表示前一位字符出现 0 次，1 次或多次
+
+`\d*` 表示数字出现 0 次，1 次或多次 
+
+`\.` 表示小数点
+
+`\$` 表示字符串以前一位的字符结束
+
+`^[1-9]\d*\.\d*$` 连起来就求出所有大于 1.0 的正浮点数。
+
+那 0.0 到 1.0 之间的正浮点数，怎么求，干嘛不直接汇总到上面的正则表达式中呢？
+
+这样写不行吗：`^[0-9]\d*\.\d*$`
+
+OK!
+
+那我们立即测试下呗
+
+```python
+In [85]: import re
+
+In [87]: recom = re.compile(r'^[0-9]\d*\.\d*$')
+
+In [88]: recom.match('000.2')
+Out[88]: <re.Match object; span=(0, 5), match='000.2'>
+```
+
+结果显示，正则表达式 `^[0-9]\d*\.\d*$` 竟然匹配到 `000.2 `，认为它是一个正浮点数~~~！！！！
+
+晕！！！！！！
+
+所以知道为啥要先匹配大于 1.0 的浮点数了吧！
+
+如果能写出这个正则表达式，再写另一部分就不困难了！
+
+0.0 到 1.0 间的浮点数：`^0\.\d*[1-9]\d*$`
+
+两个式子连接起来就是最终的结果：
+
+`^[1-9]\d*\.\d*|0\.\d*[1-9]\d*$`
+
+如果还是看不懂，看看下面的正则分布剖析图吧：
+
+![image-20200220225043053](./img/image-20200220225043053.png)
 
 ### 三、Python文件、日期和多线程
 
@@ -2959,9 +3198,153 @@ t9  adds a to 1: 10
 
 注意使用场合，避免死锁，是我们在使用多线程开发时需要注意的一些问题。
 
+#### 25 1 分钟掌握 time 模块
 
+time 模块提供时间相关的类和函数
+
+记住一个类：`struct_time`，9 个整数组成的元组
+
+记住下面 5 个最常用函数
+
+首先导入`time`模块
+
+```python
+import time
+```
+
+**1 此时此刻时间浮点数**
+
+```python
+In [58]: seconds = time.time()
+In [60]: seconds
+Out[60]: 1582341559.0950701
+```
+
+**2 时间数组**
+
+```python
+In [61]: local_time = time.localtime(seconds)
+
+In [62]: local_time
+Out[62]: time.struct_time(tm_year=2020, tm_mon=2, tm_mday=22, tm_hour=11, tm_min=19, tm_sec=19, tm_wday=5, tm_yday=53, tm_isdst=0)
+```
+
+**3 时间字符串**
+
+`time.asctime` 语义： `as convert time`
+
+```python
+In [63]: str_time = time.asctime(local_time)
+
+In [64]: str_time
+Out[64]: 'Sat Feb 22 11:19:19 2020'
+```
+
+**4 格式化时间字符串**
+
+`time.strftime` 语义： `string format time`
+
+```python
+In [65]: format_time = time.strftime('%Y-%m-%d %H:%M:%S',local_time)
+
+In [66]: format_time
+Out[66]: '2020-02-22 11:19:19'
+```
+
+**5 字符时间转时间数组**
+
+```python
+In [68]: str_to_struct = time.strptime(format_time,'%Y-%m-%d %H:%M:%S')
+
+In [69]: str_to_struct
+Out[69]: time.struct_time(tm_year=2020, tm_mon=2, tm_mday=22, tm_hour=11, tm_min=19, tm_sec=19, tm_wday=5, tm_yday=53, tm_isdst=-1)
+```
+
+最后再记住常用字符串格式
+
+**常用字符串格式**
+
+%m：月
+
+%M: 分钟
+
+```markdown
+    %Y  Year with century as a decimal number.
+    %m  Month as a decimal number [01,12].
+    %d  Day of the month as a decimal number [01,31].
+    %H  Hour (24-hour clock) as a decimal number [00,23].
+    %M  Minute as a decimal number [00,59].
+    %S  Second as a decimal number [00,61].
+    %z  Time zone offset from UTC.
+    %a  Locale's abbreviated weekday name.
+    %A  Locale's full weekday name.
+    %b  Locale's abbreviated month name.
+```
+
+#### 26 4G 内存处理 10G 大小的文件
+
+4G 内存处理 10G 大小的文件，单机怎么做？
+
+下面的讨论基于的假定：可以单独处理一行数据，行间数据相关性为零。
+
+方法一：
+
+仅使用 Python 内置模板，逐行读取到内存。
+
+使用 yield，好处是解耦读取操作和处理操作：
+
+```python
+def python_read(filename):
+    with open(filename,'r',encoding='utf-8') as f:
+        while True:
+            line = f.readline()
+            if not line:
+                return
+            yield line
+```
+
+以上每次读取一行，逐行迭代，逐行处理数据
+
+```python
+if __name__ == '__main__':
+    g = python_read('./data/movies.dat')
+    for c in g:
+        print(c)
+        # process c
+```
+
+方法二：
+
+方法一有缺点，逐行读入，频繁的 IO 操作拖累处理效率。是否有一次 IO ，读取多行的方法？
+
+`pandas` 包 `read_csv` 函数，参数有 38 个之多，功能非常强大。
+
+关于单机处理大文件，`read_csv` 的 `chunksize` 参数能做到，设置为 `5`， 意味着一次读取 5 行。
+
+```python
+def pandas_read(filename,sep=',',chunksize=5):
+    reader = pd.read_csv(filename,sep,chunksize=chunksize)
+    while True:
+        try:
+            yield reader.get_chunk()
+        except StopIteration:
+            print('---Done---')
+            break
+```
+
+使用如同方法一：
+```python
+if __name__ == '__main__':
+    g = pandas_read('./data/movies.dat',sep="::")
+    for c in g:
+        print(c)
+        # process c
+```
+
+以上就是单机处理大文件的两个方法，推荐使用方法二，更加灵活。除了工作中会用到，面试中也有时被问到。
 
 ### 四、Python三大利器
+
 Python中的三大利器包括：`迭代器`，`生成器`，`装饰器`，利用好它们才能开发出最高性能的Python程序，涉及到的内置模块 `itertools`提供迭代器相关的操作。此部分收录有意思的例子共计`14`例。
 
 
@@ -4718,7 +5101,65 @@ OK. 到此跟随5分钟入门的官档，结合两个例子实现的背后源码
 
 4)重要的参数配置包`options`，以TitleOpts类为例，`set_global_opts`将它装载到Bar类中实现属性自定义。
 
+#### 27 1 分钟学会画 pairplot 图
 
+seaborn 绘图库，基于 matplotlib 开发，提供更高层绘图接口。
+
+学习使用 seaborn 绘制 `pairplot` 图
+
+`pairplot` 图能直观的反映出两两特征间的关系，帮助我们对数据集建立初步印象，更好的完成分类和聚类任务。
+
+使用 skearn 导入经典的 Iris 数据集，共有 150 条记录，4 个特征，target 有三种不同值。如下所示：
+
+```markdown
+     sepal_length  sepal_width  petal_length  petal_width    species
+0             5.1          3.5           1.4          0.2     setosa
+1             4.9          3.0           1.4          0.2     setosa
+2             4.7          3.2           1.3          0.2     setosa
+3             4.6          3.1           1.5          0.2     setosa
+4             5.0          3.6           1.4          0.2     setosa
+..            ...          ...           ...          ...        ...
+145           6.7          3.0           5.2          2.3  virginica
+146           6.3          2.5           5.0          1.9  virginica
+147           6.5          3.0           5.2          2.0  virginica
+148           6.2          3.4           5.4          2.3  virginica
+149           5.9          3.0           5.1          1.8  virginica
+```
+
+使用 seaborn 绘制 `sepal_length`, `petal_length` 两个特征间的关系矩阵：
+
+```python
+from sklearn.datasets import load_iris
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn import tree
+
+sns.set(style="ticks")
+
+df02 = df.iloc[:,[0,2,4]] # 选择一对特征
+sns.pairplot(df02)
+plt.show()
+```
+
+![image-20200223165617790](./img/image-20200223165617790.png)
+
+设置颜色多显：
+
+```
+sns.pairplot(df02, hue="species")
+plt.show()
+```
+
+![image-20200223165649794](./img/image-20200223165649794.png)
+
+绘制所有特征散点矩阵：
+
+```
+sns.pairplot(df, hue="species")
+plt.show()
+```
+
+![image-20200223165718091](./img/image-20200223165718091.png)
 
 ### 六、 Python之坑
 
@@ -5286,6 +5727,75 @@ im.filter(ImageFilter.CONTOUR).show()
 
 ![](./img/pillow_filter.png)
 
+#### 3 一行代码找到编码
+
+兴高采烈地，从网页上抓取一段 `content`
+
+但是，一 `print ` 就不那么兴高采烈了，结果看到一串这个：
+
+```markdown
+b'\xc8\xcb\xc9\xfa\xbf\xe0\xb6\xcc\xa3\xac\xce\xd2\xd3\xc3Python'
+```
+
+这是啥？ 又 x 又 c 的！
+
+再一看，哦，原来是十六进制字节串 (`bytes`)，`\x` 表示十六进制
+
+接下来，你一定想转化为人类能看懂的语言，想到 `decode`：
+
+```python
+In [3]: b'\xc8\xcb\xc9\xfa\xbf\xe0\xb6\xcc\xa3\xac\xce\xd2\xd3\xc3Python'.decode()
+---------------------------------------------------------------------------
+UnicodeDecodeError                        Traceback (most recent call last)
+<ipython-input-3-7d0ea6148880> in <module>
+----> 1 b'\xc8\xcb\xc9\xfa\xbf\xe0\xb6\xcc\xa3\xac\xce\xd2\xd3\xc3Python'.decode()
+
+UnicodeDecodeError: 'utf-8' codec can't decode byte 0xc8 in position 0: invalid continuation byte
+```
+
+马上，一盆冷水泼头上，抛异常了。。。。。
+
+根据提示，`UnicodeDecodeError`，这是 unicode 解码错误。
+
+原来，`decode` 默认的编码方法：`utf-8` 
+
+所以排除  b'\xc8\xcb\xc9\xfa\xbf\xe0\xb6\xcc\xa3\xac\xce\xd2\xd3\xc3Python' 使用 `utf-8` 的编码方式
+
+可是，这不是四选一选择题啊，逐个排除不正确的！
+
+编码方式几十种，不可能逐个排除吧。
+
+那就猜吧！！！！！！！！！！！！！
+
+**人生苦短，我用Python**
+
+**Python， 怎忍心让你受累呢~**
+
+尽量三行代码解决问题
+
+**第一步，安装 chardet**  它是 char detect 的缩写。
+
+**第二步，pip install chardet**
+
+**第三步，出结果**
+
+```python
+In [6]: chardet.detect(b'\xc8\xcb\xc9\xfa\xbf\xe0\xb6\xcc\xa3\xac\xce\xd2\xd3\xc3Python')
+Out[6]: {'encoding': 'GB2312', 'confidence': 0.99, 'language': 'Chinese'}
+```
+
+编码方法：gb2312
+
+解密字节串：
+
+```python
+In [7]: b'\xc8\xcb\xc9\xfa\xbf\xe0\xb6\xcc\xa3\xac\xce\xd2\xd3\xc3Python'.decode('gb2312')
+Out[7]: '人生苦短，我用Python'
+```
+
+目前，`chardet` 包支持的检测编码几十种，如下所示：
+
+![image-20200227225346560](./img/image-20200227225346560.png)
 
 ### 八、 机器学习和深度学必知算法
 
@@ -7078,6 +7588,207 @@ Out[6]:
 ```
 
 也就是说dummy向量的长度等于输入字符串中，唯一字符的个数。
+
+#### 15 讨厌的SettingWithCopyWarning！！！
+
+Pandas 处理数据，太好用了，谁用谁知道！
+
+使用过 Pandas 的，几乎都会遇到一个警告：
+
+*SettingWithCopyWarning*
+
+非常烦人！
+
+尤其是刚接触 Pandas 的，完全不理解为什么弹出这么一串：
+
+```python
+d:\source\test\settingwithcopy.py:9: SettingWithCopyWarning:
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: http://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy 
+```
+
+归根结底，是因为代码中出现`链式操作`...
+
+有人就问了，什么是`链式操作`?
+
+这样的：
+
+```python
+tmp = df[df.a<4]
+tmp['c'] = 200
+```
+
+先记住这个最典型的情况，即可！
+
+有的人就问了：出现这个 Warning, 需要理会它吗？ 
+
+如果结果不对，当然要理会；如果结果对，不care.
+
+举个例子~~
+
+```python
+import pandas as  pd
+
+df = pd.DataFrame({'a':[1,3,5],'b':[4,2,7]},index=['a','b','c'])
+df.loc[df.a<4,'c'] = 100
+print(df)
+print('it\'s ok')
+
+tmp = df[df.a<4]
+tmp['c'] = 200
+print('-----tmp------')
+print(tmp)
+print('-----df-------')
+print(df)
+```
+
+输出结果：
+```python
+   a  b      c
+a  1  4  100.0
+b  3  2  100.0
+c  5  7    NaN
+it's ok
+d:\source\test\settingwithcopy.py:9: SettingWithCopyWarning:
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: http://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy     
+  tmp['c'] = 200
+-----tmp------
+   a  b    c
+a  1  4  200
+b  3  2  200
+-----df-------
+   a  b      c
+a  1  4  100.0
+b  3  2  100.0
+c  5  7    NaN
+```
+
+it's ok 行后面的发生链式赋值，导致结果错误。因为 tmp 变了，df 没赋上值啊，所以必须理会。
+
+it's ok 行前的是正解。
+
+以上，链式操作尽量避免，如何避免？多使用 `.loc[row_indexer,col_indexer]`，提示告诉我们的~
+
+#### 16 NumPy 数据归一化、分布可视化
+
+仅使用 `NumPy`，下载数据，归一化，使用 `seaborn` 展示数据分布。
+
+**下载数据**
+
+```python
+import numpy as np
+
+url = 'https://archive.ics.uci.edu/ml/machine-learning-databases/iris/iris.data'
+wid = np.genfromtxt(url, delimiter=',', dtype='float', usecols=[1])
+```
+仅提取 `iris` 数据集的第二列 `usecols = [1]`
+
+**展示数据**
+
+```python
+array([3.5, 3. , 3.2, 3.1, 3.6, 3.9, 3.4, 3.4, 2.9, 3.1, 3.7, 3.4, 3. ,
+       3. , 4. , 4.4, 3.9, 3.5, 3.8, 3.8, 3.4, 3.7, 3.6, 3.3, 3.4, 3. ,
+       3.4, 3.5, 3.4, 3.2, 3.1, 3.4, 4.1, 4.2, 3.1, 3.2, 3.5, 3.1, 3. ,
+       3.4, 3.5, 2.3, 3.2, 3.5, 3.8, 3. , 3.8, 3.2, 3.7, 3.3, 3.2, 3.2,
+       3.1, 2.3, 2.8, 2.8, 3.3, 2.4, 2.9, 2.7, 2. , 3. , 2.2, 2.9, 2.9,
+       3.1, 3. , 2.7, 2.2, 2.5, 3.2, 2.8, 2.5, 2.8, 2.9, 3. , 2.8, 3. ,
+       2.9, 2.6, 2.4, 2.4, 2.7, 2.7, 3. , 3.4, 3.1, 2.3, 3. , 2.5, 2.6,
+       3. , 2.6, 2.3, 2.7, 3. , 2.9, 2.9, 2.5, 2.8, 3.3, 2.7, 3. , 2.9,
+       3. , 3. , 2.5, 2.9, 2.5, 3.6, 3.2, 2.7, 3. , 2.5, 2.8, 3.2, 3. ,
+       3.8, 2.6, 2.2, 3.2, 2.8, 2.8, 2.7, 3.3, 3.2, 2.8, 3. , 2.8, 3. ,
+       2.8, 3.8, 2.8, 2.8, 2.6, 3. , 3.4, 3.1, 3. , 3.1, 3.1, 3.1, 2.7,
+       3.2, 3.3, 3. , 2.5, 3. , 3.4, 3. ])
+      
+```
+
+这是单变量(univariate)长度为 150 的一维 NumPy 数组。
+
+**归一化**
+
+求出最大值、最小值
+```python
+smax = np.max(wid)
+smin = np.min(wid)
+
+In [51]: smax,smin
+Out[51]: (4.4, 2.0)
+````
+归一化公式：
+```python
+s = (wid - smin) / (smax - smin)
+```
+只打印小数点后三位设置：
+```python
+np.set_printoptions(precision=3)  
+```
+
+归一化结果：
+```markdown
+array([0.625, 0.417, 0.5  , 0.458, 0.667, 0.792, 0.583, 0.583, 0.375,
+       0.458, 0.708, 0.583, 0.417, 0.417, 0.833, 1.   , 0.792, 0.625,
+       0.75 , 0.75 , 0.583, 0.708, 0.667, 0.542, 0.583, 0.417, 0.583,
+       0.625, 0.583, 0.5  , 0.458, 0.583, 0.875, 0.917, 0.458, 0.5  ,
+       0.625, 0.458, 0.417, 0.583, 0.625, 0.125, 0.5  , 0.625, 0.75 ,
+       0.417, 0.75 , 0.5  , 0.708, 0.542, 0.5  , 0.5  , 0.458, 0.125,
+       0.333, 0.333, 0.542, 0.167, 0.375, 0.292, 0.   , 0.417, 0.083,
+       0.375, 0.375, 0.458, 0.417, 0.292, 0.083, 0.208, 0.5  , 0.333,
+       0.208, 0.333, 0.375, 0.417, 0.333, 0.417, 0.375, 0.25 , 0.167,
+       0.167, 0.292, 0.292, 0.417, 0.583, 0.458, 0.125, 0.417, 0.208,
+       0.25 , 0.417, 0.25 , 0.125, 0.292, 0.417, 0.375, 0.375, 0.208,
+       0.333, 0.542, 0.292, 0.417, 0.375, 0.417, 0.417, 0.208, 0.375,
+       0.208, 0.667, 0.5  , 0.292, 0.417, 0.208, 0.333, 0.5  , 0.417,
+       0.75 , 0.25 , 0.083, 0.5  , 0.333, 0.333, 0.292, 0.542, 0.5  ,
+       0.333, 0.417, 0.333, 0.417, 0.333, 0.75 , 0.333, 0.333, 0.25 ,
+       0.417, 0.583, 0.458, 0.417, 0.458, 0.458, 0.458, 0.292, 0.5  ,
+       0.542, 0.417, 0.208, 0.417, 0.583, 0.417])
+```
+
+**分布可视化**
+
+```python
+import seaborn as sns
+sns.distplot(s,kde=False,rug=True)
+```
+频率分布直方图：
+
+
+![](https://imgkr.cn-bj.ufileos.com/49bf5190-429c-4172-a53c-e3f6b66d4e64.png)
+
+
+```python
+sns.distplot(s,hist=True,kde=True,rug=True)
+```
+带高斯密度核函数的直方图：
+
+![](https://imgkr.cn-bj.ufileos.com/4e4a72a5-8f59-4893-b435-e4b57e22a18e.png)
+
+
+
+**分布 fit 图**
+
+拿 `gamma` 分布去 fit ：
+```python
+from scipy import stats
+sns.distplot(s, kde=False, fit = stats.gamma)
+```
+
+
+
+![](https://imgkr.cn-bj.ufileos.com/89446755-7420-4f96-97fe-c4e45d0d3dec.png)
+
+
+拿双 `gamma` 去 fit：
+```python
+from scipy import stats
+sns.distplot(s, kde=False, fit = stats.dgamma)
+```
+
+![](https://imgkr.cn-bj.ufileos.com/f2c2a660-5433-4b4f-ad7b-d01da4121319.png)
 
 
 
